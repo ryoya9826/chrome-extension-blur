@@ -1,14 +1,163 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <style>
-    body { width: 200px; padding: 10px; text-align: center; }
+    body {
+      width: 320px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #333;
+    }
+
+    h3,
+    h4 {
+      margin: 0 0 10px 0;
+    }
+
+    h4 {
+      font-size: 14px;
+      color: #666;
+      margin-top: 15px;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: white;
+      padding: 8px 12px;
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+
+    .btn-add {
+      background: #28a745;
+      color: white;
+      padding: 6px 12px;
+      width: 100%;
+    }
+
+    .btn-add:hover {
+      background: #218838;
+    }
+
+    .list-item {
+      font-size: 12px;
+      border-bottom: 1px solid #eee;
+      padding: 6px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .list-item .remove-btn {
+      color: #dc3545;
+      cursor: pointer;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+
+    #analysisList {
+      font-size: 11px;
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .analysis-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .analysis-item code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    .analysis-item button {
+      background: #17a2b8;
+      color: white;
+      padding: 2px 8px;
+      font-size: 10px;
+    }
   </style>
 </head>
+
 <body>
-  <h3>Hello!</h3>
-  <button id="btn">Click me</button>
+  <h3>Blur Focus</h3>
+
+  <div class="control-group">
+    <label>
+      <input type="checkbox" id="masterToggle"> Enable Blur
+    </label>
+  </div>
+
+  <hr>
+
+  <div class="control-group">
+    <button id="selectModeBtn" class="btn-primary">
+      🖱️ Select Element on Page
+    </button>
+  </div>
+
+  <h4>Manual Add</h4>
+  <input type="text" id="targetSelector" placeholder="e.g. .ads, #sidebar">
+  <button id="addBtn" class="btn-add">Add Selector</button>
+
+  <h4>Active Filters</h4>
+  <div id="listContainer"></div>
+  <button id="resetDomainBtn"
+    style="background:#dc3545; color:white; font-size:10px; padding:4px 8px; margin-top:5px; width:100%;">Reset for this
+    Domain</button>
+
+  <div id="analysisSection">
+    <h4>Auto-Analysis Candidates</h4>
+    <div id="analysisList">
+      Scanning page...
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
+
 </html>

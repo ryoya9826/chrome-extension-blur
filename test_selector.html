@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Selector Logic Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .sidebar {
+            width: 200px;
+            background: #f0f0f0;
+            padding: 10px;
+        }
+
+        .main {
+            flex: 1;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+        }
+
+        .ad-banner {
+            background: #ffeaa7;
+            padding: 20px;
+            margin: 10px 0;
+            text-align: center;
+            border: 1px dashed orange;
+        }
+
+        .article {
+            margin-bottom: 20px;
+            padding: 10px;
+            border: 1px solid #eee;
+        }
+
+        /* Interactive styles */
+        .highlight {
+            outline: 2px solid red;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        #output {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            color: #fff;
+            padding: 20px;
+            font-family: monospace;
+            height: 100px;
+            overflow: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Selector Generator Test Bench</h1>
+    <p>Click explicitly on elements below to see the generated selector.</p>
+
+    <div class="container">
+        <div class="sidebar" id="left-sidebar">
+            <h3>Sidebar</h3>
+            <ul>
+                <li>Menu 1</li>
+                <li>Menu 2</li>
+                <li>Menu 3</li>
+            </ul>
+            <div class="ad-banner">
+                Sidebar Ad
+            </div>
+        </div>
+
+        <div class="main">
+            <header>
+                <h2>Main Content</h2>
+            </header>
+
+            <div class="article">
+                <h3>Article 1</h3>
+                <p>Some text here.</p>
+            </div>
+
+            <div class="ad-banner" id="main-ad">
+                Main Ad Banner (Has ID)
+            </div>
+
+            <div class="article">
+                <h3>Article 2</h3>
+                <p>Another article.</p>
+                <div class="ad-banner">
+                    Inside Article Ad (No ID)
+                </div>
+            </div>
+
+            <div class="article">
+                <h3>Nested Structure</h3>
+                <div>
+                    <div>
+                        <span class="deep-target">Deeply nested span</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="output">Generated selectors will appear here...</div>
+
+    <script>
+        /**
+         * COPIED from content.js for testing purposes
+         */
+        class SelectorGenerator {
+            generate(element) {
+                if (!element) return '';
+
+                if (element.id) {
+                    if (document.querySelectorAll(`#${element.id}`).length === 1) {
+                        return `#${element.id}`;
+                    }
+                }
+
+                const path = [];
+                let current = element;
+
+                while (current && current.nodeType === Node.ELEMENT_NODE) {
+                    let selector = current.tagName.toLowerCase();
+
+                    if (current.id) {
+                        selector += `#${current.id}`;
+                        path.unshift(selector);
+                        break;
+                    } else {
+                        if (current.className && typeof current.className === 'string') {
+                            const classes = current.className.trim().split(/\s+/).filter(c => c && c !== 'highlight'); // Exclude test highlight class
+                            if (classes.length > 0) {
+                                selector += `.${classes.join('.')}`;
+                            }
+                        }
+
+                        const parent = current.parentNode;
+                        if (parent) {
+                            const siblings = Array.from(parent.children).filter(child => child.tagName === current.tagName);
+                            if (siblings.length > 1) {
+                                const index = siblings.indexOf(current) + 1;
+                                selector += `:nth-of-type(${index})`;
+                            }
+                        }
+                    }
+
+                    path.unshift(selector);
+                    current = current.parentNode;
+
+                    if (path.length > 5) break;
+                    if (current.tagName === 'BODY' || current.tagName === 'HTML') break;
+                }
+
+                return path.join(' > ');
+            }
+        }
+
+        // Test Driver
+        const generator = new SelectorGenerator();
+        const output = document.getElementById('output');
+
+        document.body.addEventListener('mouseover', (e) => {
+            if (e.target.id === 'output' || e.target.closest('#output')) return; // Ignore console
+            e.target.classList.add('highlight');
+        });
+
+        document.body.addEventListener('mouseout', (e) => {
+            e.target.classList.remove('highlight');
+        });
+
+        document.body.addEventListener('click', (e) => {
+            if (e.target.id === 'output' || e.target.closest('#output')) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const selector = generator.generate(e.target);
+            const count = document.querySelectorAll(selector).length;
+
+            const log = `<div>
+        <strong>Selector:</strong> ${selector} <br>
+        <strong>Matches:</strong> ${count} element(s) 
+        ${count === 1 ? '✅ Unique' : '⚠️ Not unique!'}
+    </div>`;
+
+            output.innerHTML = log + output.innerHTML;
+        });
+
+    </script>
+
+</body>
+
+</html>

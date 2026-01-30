@@ -1,10 +1,24 @@
 {
   "manifest_version": 3,
-  "name": "My First Extension",
-  "version": "1.0",
-  "description": "VS CodeとGitHubで管理する拡張機能の練習",
+  "name": "chrome-extension-blur",
+  "version": "0.1",
+  "description": "いい感じにブローをかけてくれる",
   "action": {
     "default_popup": "popup.html"
   },
-  "permissions": []
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
 }
