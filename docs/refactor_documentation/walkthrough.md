@@ -4,8 +4,9 @@
 
 ## Features
 - **Continuous Selection (連続選択)**: 要素を選択してもモードが終了しません。続けて複数の要素を選択できます。
+- **Click-to-Toggle**: ブラー中の要素を再クリックするとそのフィルタを解除。ホバーハイライトの色（赤=追加 / 橙=解除）で操作内容を可視化。
 - **Control Panel**: 選択モード中、画面右下に「Done」ボタン付きのドラッグ可能なパネルを表示。
-- **Instant Apply**: 選択したその瞬間にブラーが適用されます。
+- **Instant Apply**: 選択したその瞬間にブラーが適用 / 解除されます。
 - **Domain Scoping**: フィルタ設定が「開いているWebサイト（ドメイン）」ごとに保存されるようになりました。Aサイトの設定がBサイトに影響することはありません。
 - **Reset Button**: ポップアップに「Reset for this Domain」ボタンを追加しました。現在のサイトのフィルタを一発で全消去できます。
 - **Active Filter Count**: ポップアップ右上に現在ドメインの有効フィルタ数を表示。
@@ -38,7 +39,13 @@
 3. "Remove all filters for [example.com]?" と聞かれるのでOKを押す。
 4. **期待動作**: リストが空になり、ページ上のブラーが全て解除されること。
 
-### Step 4: Selector Validation Test
+### Step 4: Click-to-Toggle Test
+1. 要素をブラー追加した直後、選択モードのままその要素にもう一度ホバー。
+   - **期待動作**: 枠が **橙色** に変わる。
+2. クリックする。
+   - **期待動作**: ブラーが即座に解除され、ポップアップの Active Filters からも消えていること。
+
+### Step 5: Selector Validation Test
 1. ポップアップの入力欄に `body { display: none; }` と入力して Add を押す。
     - **期待動作**: 「Selector contains forbidden characters」と赤字で表示され、追加されないこと。
 2. `..foo` のような壊れたセレクタを入力。

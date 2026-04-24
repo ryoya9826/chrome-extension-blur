@@ -195,19 +195,45 @@ class PageAnalyzer {
 }
 
 class InteractionManager {
+  // Visual state for the hover overlay.
+  static ADD_COLOR = '#ff4757';     // red — "click to add blur"
+  static REMOVE_COLOR = '#ffa502';   // orange — "click to remove blur"
+
   constructor(selectorGenerator, onSelectionSaved) {
     this.selectorGenerator = selectorGenerator;
     this.onSelectionSaved = onSelectionSaved; // Callback to refresh app
     this.isSelectionMode = false;
     this.hoverOverlay = null;
     this.controlPanel = null;
+    this.panelLabel = null;
+    // Cached snapshot of the current domain's selector list, refreshed on
+    // toggle(true) and after every storage write. Used to colour the hover
+    // overlay synchronously without re-querying chrome.storage every time.
+    this.cachedList = [];
 
     this._boundMouseOver = this.handleMouseOver.bind(this);
     this._boundClick = this.handleClick.bind(this);
     this._boundKeyDown = this.handleKeyDown.bind(this);
+    this._boundStorageChange = this.handleStorageChange.bind(this);
 
     this.createOverlay();
     this.createControlPanel();
+  }
+
+  handleStorageChange(changes, areaName) {
+    if (areaName !== 'local' || !changes.blurMap) return;
+    const map = changes.blurMap.newValue || {};
+    this.cachedList = map[window.location.hostname] || [];
+  }
+
+  refreshCache() {
+    return new Promise(resolve => {
+      chrome.storage.local.get(['blurMap'], (res) => {
+        const map = res.blurMap || {};
+        this.cachedList = map[window.location.hostname] || [];
+        resolve();
+      });
+    });
   }
 
   createOverlay() {
@@ -248,7 +274,8 @@ class InteractionManager {
         `;
 
     const label = document.createElement('span');
-    label.textContent = "🔍 Selection Mode Active";
+    label.textContent = "🔍 Click to add · Click blurred to remove";
+    this.panelLabel = label;
 
     const doneBtn = document.createElement('button');
     doneBtn.textContent = "Done";
@@ -313,16 +340,21 @@ class InteractionManager {
       document.addEventListener('mouseover', this._boundMouseOver);
       document.addEventListener('click', this._boundClick, true); // Capture phase
       document.addEventListener('keydown', this._boundKeyDown);
+      try {
+        chrome.storage.onChanged.addListener(this._boundStorageChange);
+      } catch (_e) { /* ignore */ }
+      this.refreshCache();
       document.body.style.cursor = 'crosshair';
       if (this.controlPanel) {
         this.controlPanel.style.display = 'flex';
-        // Reset position on fresh open if desired, or keep last position.
-        // Keeping last position is usually better UX, so doing nothing here.
       }
     } else {
       document.removeEventListener('mouseover', this._boundMouseOver);
       document.removeEventListener('click', this._boundClick, true);
       document.removeEventListener('keydown', this._boundKeyDown);
+      try {
+        chrome.storage.onChanged.removeListener(this._boundStorageChange);
+      } catch (_e) { /* ignore */ }
       document.body.style.cursor = '';
       this.hideOverlay();
       if (this.controlPanel) this.controlPanel.style.display = 'none';
@@ -349,29 +381,88 @@ class InteractionManager {
     this.hoverOverlay.style.left = rect.left + 'px';
     this.hoverOverlay.style.width = rect.width + 'px';
     this.hoverOverlay.style.height = rect.height + 'px';
+
+    // Colour the overlay based on whether this element is already covered
+    // by a stored selector: orange = "click to remove", red = "click to add".
+    const covering = this.findCoveringSelector(target, this.cachedList);
+    const isRemove = !!covering;
+    const color = isRemove
+      ? InteractionManager.REMOVE_COLOR
+      : InteractionManager.ADD_COLOR;
+    this.hoverOverlay.style.borderColor = color;
+    this.hoverOverlay.style.background = isRemove
+      ? 'rgba(255, 165, 2, 0.15)'
+      : 'rgba(255, 71, 87, 0.10)';
   }
 
   handleClick(e) {
     if (!this.isSelectionMode) return;
-
-    // Ignore clicks on control panel
     if (this.controlPanel.contains(e.target)) return;
 
     e.preventDefault();
     e.stopPropagation();
 
     const target = e.target;
-    const selector = this.selectorGenerator.generate(target);
 
-    // Visual feedback
+    // Always re-read storage in case the cache is stale (other tab edits etc).
+    chrome.storage.local.get(['blurMap'], (res) => {
+      const map = res.blurMap || {};
+      const domain = window.location.hostname;
+      const list = map[domain] || [];
+
+      const existing = this.findCoveringSelector(target, list);
+
+      if (existing) {
+        this.flashOverlay('#2ed573'); // green flash on successful removal
+        this.removeSelectorFromList(existing, list, map, domain);
+      } else {
+        const selector = this.selectorGenerator.generate(target);
+        this.flashOverlay('#2ed573'); // green flash on successful add
+        this.saveSelector(selector);
+      }
+    });
+  }
+
+  /**
+   * Returns the stored selector string that currently matches the clicked
+   * element (or any of its ancestors), or null if none does.
+   */
+  findCoveringSelector(target, list) {
+    if (!Array.isArray(list) || list.length === 0) return null;
+    for (const item of list) {
+      if (!item || !isSafeSelector(item.selector)) continue;
+      let matches;
+      try {
+        matches = document.querySelectorAll(item.selector);
+      } catch (_e) {
+        continue;
+      }
+      for (const node of matches) {
+        if (node === target || node.contains(target)) {
+          return item.selector;
+        }
+      }
+    }
+    return null;
+  }
+
+  removeSelectorFromList(selector, list, map, domain) {
+    const next = list.filter(item => item.selector !== selector);
+    map[domain] = next;
+    this.cachedList = next;
+    chrome.storage.local.set({ blurMap: map }, () => {
+      console.log(`[Interaction] Removed ${selector} for ${domain}`);
+      if (this.onSelectionSaved) this.onSelectionSaved();
+    });
+  }
+
+  flashOverlay(color) {
+    if (!this.hoverOverlay) return;
     const originalBorder = this.hoverOverlay.style.borderColor;
-    this.hoverOverlay.style.borderColor = '#2ed573'; // Green flash
+    this.hoverOverlay.style.borderColor = color;
     setTimeout(() => {
       if (this.hoverOverlay) this.hoverOverlay.style.borderColor = originalBorder;
     }, 300);
-
-    this.saveSelector(selector);
-    // Do NOT toggle false here - allow continuous selection
   }
 
   handleKeyDown(e) {
@@ -393,6 +484,7 @@ class InteractionManager {
       if (!list.some(item => item.selector === selector)) {
         list.push({ selector: selector, createdAt: Date.now() });
         map[domain] = list;
+        this.cachedList = list;
 
         chrome.storage.local.set({ blurMap: map }, () => {
           console.log(`[Interaction] Saved ${selector} for ${domain}`);
