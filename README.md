@@ -3,8 +3,6 @@
 指定した要素にブラー（ぼかし）をかけ、ホバーで一時的に解除できるChrome拡張機能です。
 広告やサイドバー、画面共有やスクリーンショットに映したくない個人情報など、画面上のノイズを隠したい時に便利です。
 
-![Blur Focus icon](icons/icon128.png)
-
 ## 特徴
 
 - **ショートカット対応**: <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> で要素選択モードを素早く切り替え（`chrome://extensions/shortcuts` からカスタマイズ可能）。
