@@ -10,6 +10,7 @@
 
 | 機能 | 説明 |
 |---|---|
+| **Keyboard Shortcut** | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> で選択モードを ON/OFF（カスタマイズは `chrome://extensions/shortcuts`）。 |
 | **Element Picker** | ボタン一発でページ上の要素を視覚的に連続選択。Esc または「Done」パネルで終了。 |
 | **Click-to-Toggle** | 選択モードで未対象の要素をクリック → 追加。**ブラー中の要素を再クリック → 解除。** ハイライト色（赤=追加 / 橙=解除）で操作内容が一目で分かります。 |
 | **Hover to Reveal** | ブラーがかかった要素はマウスを乗せると一瞬で内容が見えます。 |
@@ -55,7 +56,7 @@
 ポップアップを開いて **「Enable Blur」** にチェック。
 
 ### 2. 要素を選ぶ
-- **🖱️ Select Element on Page** をクリック
+- **🖱️ Select Element on Page** をクリック、または <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> を押す（もう一度押すと終了）
 - ページ上をマウスで動かすとハイライト
   - **赤枠**: 未対象 → クリックで追加
   - **橙枠**: すでにブラー中 → クリックで解除
@@ -82,6 +83,7 @@ chrome-extension-blur/
 ├── manifest.json          # MV3 manifest (icons, CSP, content script)
 ├── popup.html             # Toolbar popup UI
 ├── popup.js               # Popup logic + selector validation
+├── background.js          # MV3 service worker (keyboard-shortcut handler)
 ├── content.js             # Page-side blur engine + element picker
 ├── icons/
 │   ├── icon16.png
@@ -140,6 +142,7 @@ chrome.storage.local = {
 - [ ] `body { display: none; }` を入力 → 赤字エラーで拒否される
 - [ ] ホバーするとブラーが解除される
 - [ ] 選択モードでブラー中の要素にホバー → 橙枠になり、クリックで解除される
+- [ ] <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> を押すと選択モードが ON/OFF される
 
 ---
 

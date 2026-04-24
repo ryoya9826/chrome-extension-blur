@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Blur Focus",
-  "version": "0.2",
+  "version": "0.3",
   "description": "いい感じにブラーをかけて広告や個人情報をホバーで隠す Chrome 拡張機能。",
   "action": {
     "default_popup": "popup.html",
@@ -19,8 +19,12 @@
   },
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "scripting"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": [
@@ -32,6 +36,15 @@
       "run_at": "document_idle"
     }
   ],
+  "commands": {
+    "toggle-select-mode": {
+      "suggested_key": {
+        "default": "Alt+Shift+B",
+        "mac": "Alt+Shift+B"
+      },
+      "description": "Toggle Blur Focus element-picker mode"
+    }
+  },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

@@ -29,3 +29,8 @@
 - [x] **v0.2 - Picker UX**
     - [x] **Click-to-Toggle**: 選択モードでブラー中の要素を再クリック → 解除 <!-- id: 21 -->
     - [x] ホバー色を追加=赤 / 解除=橙 で切り替え <!-- id: 22 -->
+- [x] **v0.3 - Keyboard Shortcut**
+    - [x] `manifest.json` に `commands` と `background` service worker を追加 <!-- id: 23 -->
+    - [x] `background.js` 新規作成: ショートカット → active タブへ toggle メッセージ <!-- id: 24 -->
+    - [x] `content.js`: toggle 用アクション分岐を追加（true で反転） <!-- id: 25 -->
+    - [x] popup にショートカット表示と編集リンクを追加 <!-- id: 26 -->

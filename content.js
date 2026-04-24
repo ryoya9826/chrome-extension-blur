@@ -526,8 +526,14 @@ class App {
           this.refresh();
           sendResponse({ status: "ok" });
         } else if (msg.action === "toggleSelectMode") {
-          this.interactionManager.toggle(msg.enabled);
-          sendResponse({ status: "ok" });
+          // `toggle: true` (from background shortcut) flips current state;
+          // explicit `enabled: bool` (from popup) sets it directly.
+          if (msg.toggle === true) {
+            this.interactionManager.toggle(!this.interactionManager.isSelectionMode);
+          } else {
+            this.interactionManager.toggle(!!msg.enabled);
+          }
+          sendResponse({ status: "ok", isSelectionMode: this.interactionManager.isSelectionMode });
         } else if (msg.action === "analyzePage") {
           const candidates = this.pageAnalyzer.analyze();
           sendResponse({ candidates: candidates });

@@ -98,6 +98,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Display the actual user-configured shortcut (or the suggested default)
+    // for the toggle-select-mode command.
+    const shortcutKeysEl = document.getElementById('shortcutKeys');
+    const shortcutEditLink = document.getElementById('shortcutEditLink');
+    if (shortcutKeysEl && chrome.commands && chrome.commands.getAll) {
+        chrome.commands.getAll((commands) => {
+            const cmd = commands.find(c => c.name === 'toggle-select-mode');
+            if (cmd && cmd.shortcut) {
+                renderShortcut(cmd.shortcut);
+            } else {
+                renderShortcut(null);
+            }
+        });
+    }
+
+    if (shortcutEditLink) {
+        shortcutEditLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+        });
+    }
+
+    function renderShortcut(combo) {
+        const hint = document.getElementById('shortcutHint');
+        if (!hint) return;
+        hint.textContent = '';
+
+        if (!combo) {
+            const note = document.createElement('span');
+            note.textContent = 'Shortcut not set. ';
+            hint.appendChild(note);
+        } else {
+            const label = document.createElement('span');
+            label.textContent = 'Shortcut: ';
+            hint.appendChild(label);
+
+            const parts = combo.split('+');
+            parts.forEach((part, i) => {
+                if (i > 0) hint.appendChild(document.createTextNode('+'));
+                const kbd = document.createElement('kbd');
+                kbd.textContent = part;
+                hint.appendChild(kbd);
+            });
+        }
+
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = combo ? 'change' : 'set';
+        link.tabIndex = -1;
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
+        });
+        hint.appendChild(document.createTextNode(' '));
+        hint.appendChild(link);
+    }
+
     sendMessageToActiveTab({ action: "analyzePage" }, (response) => {
         if (response === null) {
             return;
