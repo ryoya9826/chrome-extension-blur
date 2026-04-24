@@ -20,6 +20,15 @@
       font-size: 14px;
       color: #666;
       margin-top: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    h4 .count {
+      font-size: 11px;
+      color: #007bff;
+      font-weight: normal;
     }
 
     .control-group {
@@ -90,6 +99,13 @@
       margin-left: 10px;
     }
 
+    .input-error {
+      display: none;
+      color: #dc3545;
+      font-size: 11px;
+      margin: -4px 0 8px 0;
+    }
+
     #analysisList {
       font-size: 11px;
       background: #f8f9fa;
@@ -112,6 +128,10 @@
       background: #eee;
       padding: 2px 4px;
       border-radius: 3px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .analysis-item button {
@@ -119,6 +139,12 @@
       color: white;
       padding: 2px 8px;
       font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .analysis-item button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
     }
   </style>
 </head>
@@ -142,9 +168,13 @@
 
   <h4>Manual Add</h4>
   <input type="text" id="targetSelector" placeholder="e.g. .ads, #sidebar">
+  <div id="inputError" class="input-error"></div>
   <button id="addBtn" class="btn-add">Add Selector</button>
 
-  <h4>Active Filters</h4>
+  <h4>
+    <span>Active Filters</span>
+    <span id="filterCount" class="count"></span>
+  </h4>
   <div id="listContainer"></div>
   <button id="resetDomainBtn"
     style="background:#dc3545; color:white; font-size:10px; padding:4px 8px; margin-top:5px; width:100%;">Reset for this

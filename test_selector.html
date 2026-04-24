@@ -162,6 +162,7 @@
                     current = current.parentNode;
 
                     if (path.length > 5) break;
+                    if (!current || current.nodeType !== Node.ELEMENT_NODE) break;
                     if (current.tagName === 'BODY' || current.tagName === 'HTML') break;
                 }
 

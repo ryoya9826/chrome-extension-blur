@@ -59,11 +59,32 @@ class SelectorGenerator {
 
       // Limit depth to avoid super long selectors
       if (path.length > 5) break;
+      // Stop bubbling at BODY/HTML or when we run out of element parents
+      if (!current || current.nodeType !== Node.ELEMENT_NODE) break;
       if (current.tagName === 'BODY' || current.tagName === 'HTML') break;
     }
 
     return path.join(' > ');
   }
+}
+
+/**
+ * Shared validation used by both popup.js and content.js. Mirrors
+ * the rules in popup.js#validateSelector to defend against malformed or
+ * malicious entries that may have been written via legacy storage data.
+ */
+function isSafeSelector(selector) {
+  if (typeof selector !== 'string') return false;
+  const s = selector.trim();
+  if (s.length === 0 || s.length > 500) return false;
+  if (/[{};]|\/\*|\*\//.test(s)) return false;
+  if (/@import|expression\s*\(|url\s*\(/i.test(s)) return false;
+  try {
+    document.createDocumentFragment().querySelector(s);
+  } catch (_e) {
+    return false;
+  }
+  return true;
 }
 
 class BlurManager {
@@ -84,10 +105,14 @@ class BlurManager {
     }
 
     let cssRules = '';
+    let skipped = 0;
 
-    // Generage separate rules for each selector prevents one bad selector from breaking everything
+    // Generate separate rules for each selector — one bad selector won't break the rest.
     blurList.forEach(item => {
-      if (!item.selector || item.selector.trim() === '') return;
+      if (!item || !isSafeSelector(item.selector)) {
+        skipped++;
+        return;
+      }
 
       const sel = item.selector.trim();
       cssRules += `
@@ -101,6 +126,10 @@ class BlurManager {
                 }
             `;
     });
+
+    if (skipped > 0) {
+      console.warn(`[Blur Manager] Skipped ${skipped} unsafe/invalid selector(s).`);
+    }
 
     if (cssRules) {
       const style = document.createElement('style');
@@ -125,7 +154,11 @@ class PageAnalyzer {
   }
 
   analyze() {
-    const keywords = ['ad', 'side', 'user', 'header', 'footer', 'comment', 'banner', 'sp-ad', 'promo', 'recommend'];
+    const keywords = [
+      'ad', 'banner', 'sp-ad', 'promo', 'recommend', 'sponsored',
+      'side', 'header', 'footer', 'comment',
+      'user', 'profile', 'private', 'name', 'email', 'avatar', 'account'
+    ];
     const results = [];
 
     // Use a set to avoid duplicate selectors
@@ -144,13 +177,13 @@ class PageAnalyzer {
       if (matchesKeyword && el.offsetWidth > 50 && el.offsetHeight > 50) { // Filter out tiny invisible elements
         const selector = this.generator.generate(el);
 
-        // Add if new
-        if (selector && !uniqueSelectors.has(selector)) {
+        // Only suggest selectors we trust to be safe & syntactically valid.
+        if (selector && !uniqueSelectors.has(selector) && isSafeSelector(selector)) {
           uniqueSelectors.add(selector);
           results.push({
             label: `Found candidate (${el.tagName})`,
             selector: selector,
-            element: el // Keep ref if needed, though we only send selector back
+            element: el
           });
         }
       }
@@ -348,6 +381,10 @@ class InteractionManager {
   }
 
   saveSelector(selector) {
+    if (!isSafeSelector(selector)) {
+      console.warn(`[Interaction] Refused to save unsafe selector: ${selector}`);
+      return;
+    }
     chrome.storage.local.get(['blurMap'], (res) => {
       const map = res.blurMap || {};
       const domain = window.location.hostname;

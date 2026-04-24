@@ -6,10 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectModeBtn = document.getElementById('selectModeBtn');
     const analysisList = document.getElementById('analysisList');
     const resetDomainBtn = document.getElementById('resetDomainBtn');
+    const inputError = document.getElementById('inputError');
+    const filterCount = document.getElementById('filterCount');
 
     let currentHost = '';
 
-    // 1. Get current tab and domain
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const tab = tabs[0];
         if (tab && tab.url) {
@@ -19,10 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadState();
             } catch (e) {
                 console.error("Invalid URL:", e);
-                listContainer.innerHTML = '<div style="color:red; font-size:12px;">Cannot access this page.</div>';
+                showFatal('Cannot access this page.');
             }
         } else {
-            listContainer.innerHTML = '<div style="color:red; font-size:12px;">No active tab found.</div>';
+            showFatal('No active tab found.');
         }
     });
 
@@ -32,39 +33,52 @@ document.addEventListener('DOMContentLoaded', () => {
             masterToggle.checked = res.enabled || false;
 
             const map = res.blurMap || {};
-            // Get list specific to this domain
             const list = map[currentHost] || [];
 
             renderBlurList(list);
         });
     }
 
-    // 2. Master Toggle
     masterToggle.addEventListener('change', () => {
         chrome.storage.local.set({ enabled: masterToggle.checked }, () => {
             notifyContentScript("refresh");
         });
     });
 
-    // 3. Add Manual Selector
     addBtn.addEventListener('click', () => {
         const selector = targetSelector.value.trim();
-        if (!selector) return;
+        if (!selector) {
+            showInputError('Please enter a CSS selector.');
+            return;
+        }
+        const validation = validateSelector(selector);
+        if (!validation.ok) {
+            showInputError(validation.message);
+            return;
+        }
+        clearInputError();
         addSelector(selector);
         targetSelector.value = '';
     });
 
-    // 4. Reset Domain Filters
+    targetSelector.addEventListener('input', clearInputError);
+    targetSelector.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addBtn.click();
+        }
+    });
+
     if (resetDomainBtn) {
         resetDomainBtn.addEventListener('click', () => {
             if (!currentHost) return;
             if (confirm(`Remove all filters for ${currentHost}?`)) {
                 chrome.storage.local.get(['blurMap'], (res) => {
                     const map = res.blurMap || {};
-                    map[currentHost] = []; // Clear only this domain
+                    map[currentHost] = [];
 
                     chrome.storage.local.set({ blurMap: map }, () => {
-                        loadState(); // Refresh UI
+                        loadState();
                         notifyContentScript("resetDomain");
                     });
                 });
@@ -72,50 +86,55 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 5. Toggle Selection Mode
     selectModeBtn.addEventListener('click', () => {
-        // Change button text to indicate action
         selectModeBtn.textContent = "Connecting...";
 
         sendMessageToActiveTab({ action: "toggleSelectMode", enabled: true }, (res) => {
+            if (res === null) {
+                selectModeBtn.textContent = "🖱️ Select Element on Page";
+                return;
+            }
             window.close();
         });
     });
 
-    // 6. Auto Analysis
     sendMessageToActiveTab({ action: "analyzePage" }, (response) => {
-        if (chrome.runtime.lastError) {
-            analysisList.textContent = "Could not connect to page. Refresh the page?";
+        if (response === null) {
             return;
         }
 
         if (response && response.candidates && response.candidates.length > 0) {
-            analysisList.innerHTML = '';
+            analysisList.textContent = '';
             response.candidates.forEach(c => {
                 const item = document.createElement('div');
                 item.className = 'analysis-item';
-                item.innerHTML = `
-                    <code>${escapeHtml(c.selector)}</code>
-                    <button data-selector="${escapeHtml(c.selector)}">Add</button>
-                `;
-                analysisList.appendChild(item);
-            });
 
-            // Event delegation for analysis buttons
-            analysisList.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const sel = e.target.getAttribute('data-selector');
-                    addSelector(sel);
-                    e.target.textContent = "Added";
-                    e.target.disabled = true;
+                const code = document.createElement('code');
+                code.textContent = c.selector;
+
+                const btn = document.createElement('button');
+                btn.textContent = 'Add';
+                btn.dataset.selector = c.selector;
+                btn.addEventListener('click', () => {
+                    const validation = validateSelector(c.selector);
+                    if (!validation.ok) {
+                        btn.textContent = 'Invalid';
+                        btn.disabled = true;
+                        return;
+                    }
+                    addSelector(c.selector);
+                    btn.textContent = 'Added';
+                    btn.disabled = true;
                 });
+
+                item.appendChild(code);
+                item.appendChild(btn);
+                analysisList.appendChild(item);
             });
         } else {
             analysisList.textContent = "No obvious candidates found.";
         }
     });
-
-    // --- Helpers ---
 
     function addSelector(selector) {
         if (!currentHost) return;
@@ -123,10 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const map = res.blurMap || {};
             const list = map[currentHost] || [];
 
-            // Avoid duplicates
             if (!list.some(item => item.selector === selector)) {
                 list.push({ selector: selector, createdAt: Date.now() });
-                map[currentHost] = list; // Update map
+                map[currentHost] = list;
 
                 chrome.storage.local.set({ blurMap: map }, () => {
                     renderBlurList(list);
@@ -153,26 +171,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderBlurList(list) {
+        listContainer.textContent = '';
+
+        if (filterCount) {
+            const count = list ? list.length : 0;
+            filterCount.textContent = count > 0 ? `${count} active` : '';
+        }
+
         if (!list || list.length === 0) {
-            listContainer.innerHTML = '<div style="color:#999; font-size:12px; padding:5px;">No filters active for this domain.</div>';
+            const empty = document.createElement('div');
+            empty.style.cssText = 'color:#999; font-size:12px; padding:5px;';
+            empty.textContent = 'No filters active for this domain.';
+            listContainer.appendChild(empty);
             return;
         }
-        listContainer.innerHTML = '';
+
         list.forEach(item => {
             const el = document.createElement('div');
             el.className = 'list-item';
 
-            const displaySelector = formatSelector(item.selector);
+            const span = document.createElement('span');
+            span.title = item.selector;
+            span.textContent = formatSelector(item.selector);
 
-            el.innerHTML = `
-                <span title="${escapeHtml(item.selector)}">${escapeHtml(displaySelector)}</span> 
-                <span class="remove-btn">×</span>
-            `;
-
-            el.querySelector('.remove-btn').addEventListener('click', () => {
+            const removeBtn = document.createElement('span');
+            removeBtn.className = 'remove-btn';
+            removeBtn.textContent = '×';
+            removeBtn.title = 'Remove this filter';
+            removeBtn.addEventListener('click', () => {
                 removeSelector(item.selector);
             });
 
+            el.appendChild(span);
+            el.appendChild(removeBtn);
             listContainer.appendChild(el);
         });
     }
@@ -181,18 +212,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!selector) return "";
         if (selector.length <= 40) return selector;
 
-        // Strategy 1: Show last part of ' > '
         const parts = selector.split(' > ');
         if (parts.length > 1) {
             const last = parts[parts.length - 1];
-            // If last part is still too long, truncate it
             if (last.length > 35) {
                 return "... > " + truncateClass(last);
             }
             return "... > " + last;
         }
 
-        // Strategy 2: Just truncate
         return truncateClass(selector);
     }
 
@@ -204,25 +232,28 @@ document.addEventListener('DOMContentLoaded', () => {
     function sendMessageToActiveTab(msg, callback) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             const tab = tabs[0];
-            // 1. Check if tab exists
             if (!tab || !tab.id) {
                 if (callback) callback(null);
                 return;
             }
 
-            // 2. Check if URL is supported
-            if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:'))) {
-                const analysisList = document.getElementById('analysisList');
+            if (tab.url && (tab.url.startsWith('chrome://') ||
+                tab.url.startsWith('edge://') ||
+                tab.url.startsWith('about:') ||
+                tab.url.startsWith('chrome-extension://'))) {
                 if (analysisList) analysisList.textContent = "Cannot run on this page.";
+                if (callback) callback(null);
                 return;
             }
 
-            // 3. Send message with error handling
             chrome.tabs.sendMessage(tab.id, msg, (response) => {
                 if (chrome.runtime.lastError) {
-                    const analysisList = document.getElementById('analysisList');
                     if (msg.action === "analyzePage" && analysisList) {
-                        analysisList.innerHTML = `<span style="color:red;">Please reload the page.<br>(Content script not ready)</span>`;
+                        analysisList.textContent = '';
+                        const note = document.createElement('span');
+                        note.style.color = '#dc3545';
+                        note.textContent = 'Please reload the page (content script not ready).';
+                        analysisList.appendChild(note);
                     }
                     if (callback) callback(null);
                 } else {
@@ -236,13 +267,50 @@ document.addEventListener('DOMContentLoaded', () => {
         sendMessageToActiveTab({ action: action });
     }
 
-    function escapeHtml(text) {
-        if (!text) return text;
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+    function showInputError(message) {
+        if (!inputError) return;
+        inputError.textContent = message;
+        inputError.style.display = 'block';
+    }
+
+    function clearInputError() {
+        if (!inputError) return;
+        inputError.textContent = '';
+        inputError.style.display = 'none';
+    }
+
+    function showFatal(message) {
+        listContainer.textContent = '';
+        const div = document.createElement('div');
+        div.style.cssText = 'color:#dc3545; font-size:12px;';
+        div.textContent = message;
+        listContainer.appendChild(div);
+    }
+
+    /**
+     * Validates a CSS selector string.
+     * Rejects selectors containing CSS block characters ({, }, ;, /*) which
+     * could be used for CSS injection, and verifies syntactic validity by
+     * attempting to query a detached document fragment.
+     */
+    function validateSelector(selector) {
+        if (typeof selector !== 'string' || selector.length === 0) {
+            return { ok: false, message: 'Selector must be a non-empty string.' };
+        }
+        if (selector.length > 500) {
+            return { ok: false, message: 'Selector is too long (max 500 chars).' };
+        }
+        if (/[{};]|\/\*|\*\//.test(selector)) {
+            return { ok: false, message: 'Selector contains forbidden characters ({ } ; /* */).' };
+        }
+        if (/@import|expression\s*\(|url\s*\(/i.test(selector)) {
+            return { ok: false, message: 'Selector contains forbidden tokens.' };
+        }
+        try {
+            document.createDocumentFragment().querySelector(selector);
+        } catch (_e) {
+            return { ok: false, message: 'Invalid CSS selector syntax.' };
+        }
+        return { ok: true };
     }
 });
