@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Blur Focus",
-  "version": "0.3",
+  "version": "0.4",
   "description": "いい感じにブラーをかけて広告や個人情報をホバーで隠す Chrome 拡張機能。",
   "action": {
     "default_popup": "popup.html",

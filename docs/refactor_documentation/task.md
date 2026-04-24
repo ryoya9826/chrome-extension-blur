@@ -34,3 +34,7 @@
     - [x] `background.js` 新規作成: ショートカット → active タブへ toggle メッセージ <!-- id: 24 -->
     - [x] `content.js`: toggle 用アクション分岐を追加（true で反転） <!-- id: 25 -->
     - [x] popup にショートカット表示と編集リンクを追加 <!-- id: 26 -->
+- [x] **v0.4 - Branded Icons**
+    - [x] Gemini 生成のパズルピース画像を `fig/` に取り込み <!-- id: 27 -->
+    - [x] `tools/generate_icons.py` をクロップ＆リサイズ方式に切替 <!-- id: 28 -->
+    - [x] icons/ を Gemini ベースに更新 <!-- id: 29 -->

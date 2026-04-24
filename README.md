@@ -89,8 +89,11 @@ chrome-extension-blur/
 │   ├── icon16.png
 │   ├── icon48.png
 │   └── icon128.png
+├── fig/
+│   └── Gemini_Generated_Image_*.png  # Source artwork (icon set mock-up)
 ├── tools/
-│   └── generate_icons.py  # Icon regenerator (uv run --with pillow)
+│   ├── generate_icons.py  # Crops puzzle from fig/ and emits icons/*.png
+│   └── crop_preview.py    # Helper to iterate on crop coordinates
 ├── test_selector.html     # Standalone bench for SelectorGenerator
 └── docs/
     ├── refactor_documentation/
