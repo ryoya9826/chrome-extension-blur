@@ -3,6 +3,8 @@
   "name": "Blur Focus",
   "version": "0.4",
   "description": "いい感じにブラーをかけて広告や個人情報をホバーで隠す Chrome 拡張機能。",
+  "author": "Ryoya Ando (安藤遼哉)",
+  "homepage_url": "https://ryoya9826.github.io/",
   "action": {
     "default_popup": "popup.html",
     "default_title": "Blur Focus",

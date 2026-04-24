@@ -149,6 +149,12 @@ chrome.storage.local = {
 
 ---
 
+## 👤 Author
+
+**Ryoya Ando (安藤遼哉)**
+[https://ryoya9826.github.io/](https://ryoya9826.github.io/)
+
 ## 📝 License
 
-Private / personal use.
+[MIT License](LICENSE) © 2026 Ryoya Ando (安藤遼哉).
+You are free to use, copy, modify, and redistribute this software with attribution.
