@@ -7,7 +7,8 @@
     body {
       width: 320px;
       padding: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", Meiryo, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
       color: #333;
     }
 
@@ -190,44 +191,38 @@
 
   <div class="control-group">
     <label>
-      <input type="checkbox" id="masterToggle"> Enable Blur
+      <input type="checkbox" id="masterToggle"> <span data-i18n="enableBlur">Enable Blur</span>
     </label>
-    <label class="sub-option" title="Turn off when screen sharing so blurred content is never revealed by accident.">
-      <input type="checkbox" id="hoverRevealToggle"> Reveal on hover
+    <label class="sub-option" data-i18n-title="revealOnHoverHint" title="Turn off when screen sharing so blurred content is never revealed by accident.">
+      <input type="checkbox" id="hoverRevealToggle"> <span data-i18n="revealOnHover">Reveal on hover</span>
     </label>
   </div>
 
   <hr>
 
   <div class="control-group">
-    <button id="selectModeBtn" class="btn-primary">
-      🖱️ Select Element on Page
-    </button>
-    <div id="shortcutHint" class="shortcut-hint">
-      Shortcut: <kbd id="shortcutKeys">Alt</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd>
-      <a id="shortcutEditLink" href="#" tabindex="-1">change</a>
-    </div>
+    <button id="selectModeBtn" class="btn-primary" data-i18n="selectElement">🖱️ Select Element on Page</button>
+    <!-- 中身は popup.js の renderShortcut が現在のショートカット設定から描画する -->
+    <div id="shortcutHint" class="shortcut-hint"></div>
   </div>
 
-  <h4>Manual Add</h4>
-  <input type="text" id="targetSelector" placeholder="e.g. .ads, #sidebar">
+  <h4 data-i18n="manualAdd">Manual Add</h4>
+  <input type="text" id="targetSelector" data-i18n-placeholder="selectorPlaceholder" placeholder="e.g. .ads, #sidebar">
   <div id="inputError" class="input-error"></div>
-  <button id="addBtn" class="btn-add">Add Selector</button>
+  <button id="addBtn" class="btn-add" data-i18n="addSelector">Add Selector</button>
 
   <h4>
-    <span>Active Filters</span>
+    <span data-i18n="activeFilters">Active Filters</span>
     <span id="filterCount" class="count"></span>
   </h4>
   <div id="listContainer"></div>
   <button id="resetDomainBtn"
-    style="background:#dc3545; color:white; font-size:10px; padding:4px 8px; margin-top:5px; width:100%;">Reset for this
-    Domain</button>
+    style="background:#dc3545; color:white; font-size:10px; padding:4px 8px; margin-top:5px; width:100%;"
+    data-i18n="resetDomain">Reset for this Domain</button>
 
   <div id="analysisSection">
-    <h4>Auto-Analysis Candidates</h4>
-    <div id="analysisList">
-      Scanning page...
-    </div>
+    <h4 data-i18n="candidates">Auto-Analysis Candidates</h4>
+    <div id="analysisList" data-i18n="scanning">Scanning page...</div>
   </div>
 
   <script src="popup.js"></script>

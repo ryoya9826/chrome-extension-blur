@@ -1,0 +1,140 @@
+{
+  "htmlLang": {
+    "message": "en",
+    "description": "popup.html の lang 属性に入れる言語コード。翻訳しない"
+  },
+  "extName": {
+    "message": "Blur Focus",
+    "description": "拡張機能名"
+  },
+  "extDescription": {
+    "message": "Blur ads, sidebars and personal info on any site. Hover to peek. All settings stay on your device.",
+    "description": "ストアと拡張機能一覧の説明（132 文字以内）"
+  },
+  "commandToggleSelect": {
+    "message": "Toggle element picker",
+    "description": "ショートカットの説明"
+  },
+  "enableBlur": {
+    "message": "Enable Blur"
+  },
+  "revealOnHover": {
+    "message": "Reveal on hover"
+  },
+  "revealOnHoverHint": {
+    "message": "Turn off when screen sharing so blurred content is never revealed by accident.",
+    "description": "Reveal on hover のツールチップ"
+  },
+  "selectElement": {
+    "message": "🖱️ Select Element on Page"
+  },
+  "connecting": {
+    "message": "Connecting..."
+  },
+  "shortcutLabel": {
+    "message": "Shortcut: "
+  },
+  "shortcutNotSet": {
+    "message": "Shortcut not set. "
+  },
+  "shortcutChange": {
+    "message": "change"
+  },
+  "shortcutSet": {
+    "message": "set"
+  },
+  "manualAdd": {
+    "message": "Manual Add"
+  },
+  "selectorPlaceholder": {
+    "message": "e.g. .ads, #sidebar"
+  },
+  "addSelector": {
+    "message": "Add Selector"
+  },
+  "activeFilters": {
+    "message": "Active Filters"
+  },
+  "noFilters": {
+    "message": "No filters active for this domain."
+  },
+  "removeFilter": {
+    "message": "Remove this filter"
+  },
+  "resetDomain": {
+    "message": "Reset for this Domain"
+  },
+  "candidates": {
+    "message": "Auto-Analysis Candidates"
+  },
+  "scanning": {
+    "message": "Scanning page..."
+  },
+  "noCandidates": {
+    "message": "No obvious candidates found."
+  },
+  "add": {
+    "message": "Add"
+  },
+  "added": {
+    "message": "Added"
+  },
+  "invalid": {
+    "message": "Invalid"
+  },
+  "cannotRun": {
+    "message": "Cannot run on this page."
+  },
+  "reloadPage": {
+    "message": "Please reload the page (content script not ready)."
+  },
+  "cannotAccess": {
+    "message": "Cannot access this page."
+  },
+  "noActiveTab": {
+    "message": "No active tab found."
+  },
+  "errEmpty": {
+    "message": "Please enter a CSS selector."
+  },
+  "errNotString": {
+    "message": "Selector must be a non-empty string."
+  },
+  "errTooLong": {
+    "message": "Selector is too long (max 500 chars)."
+  },
+  "errForbiddenChars": {
+    "message": "Selector contains forbidden characters ({ } ; /* */)."
+  },
+  "errForbiddenTokens": {
+    "message": "Selector contains forbidden tokens."
+  },
+  "errSyntax": {
+    "message": "Invalid CSS selector syntax."
+  },
+  "pickerHint": {
+    "message": "🔍 Click to add · Click blurred to remove",
+    "description": "選択モードの操作パネル"
+  },
+  "pickerDone": {
+    "message": "Done"
+  },
+  "activeCount": {
+    "message": "$COUNT$ active",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "confirmReset": {
+    "message": "Remove all filters for $HOST$?",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

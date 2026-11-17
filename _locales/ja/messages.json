@@ -1,0 +1,140 @@
+{
+  "htmlLang": {
+    "message": "ja",
+    "description": "popup.html の lang 属性に入れる言語コード。翻訳しない"
+  },
+  "extName": {
+    "message": "Blur Focus",
+    "description": "拡張機能名"
+  },
+  "extDescription": {
+    "message": "広告やサイドバー、個人情報をぼかして隠します。マウスを乗せると一時的に表示できます。設定は端末内にのみ保存されます。",
+    "description": "ストアと拡張機能一覧の説明（132 文字以内）"
+  },
+  "commandToggleSelect": {
+    "message": "要素選択モードを切り替える",
+    "description": "ショートカットの説明"
+  },
+  "enableBlur": {
+    "message": "ブラーを有効にする"
+  },
+  "revealOnHover": {
+    "message": "マウスを乗せると表示する"
+  },
+  "revealOnHoverHint": {
+    "message": "画面共有中はオフにすると、誤って内容が表示されるのを防げます。",
+    "description": "Reveal on hover のツールチップ"
+  },
+  "selectElement": {
+    "message": "🖱️ ページ上の要素を選択"
+  },
+  "connecting": {
+    "message": "接続中…"
+  },
+  "shortcutLabel": {
+    "message": "ショートカット: "
+  },
+  "shortcutNotSet": {
+    "message": "ショートカット未設定。"
+  },
+  "shortcutChange": {
+    "message": "変更"
+  },
+  "shortcutSet": {
+    "message": "設定"
+  },
+  "manualAdd": {
+    "message": "セレクタを直接追加"
+  },
+  "selectorPlaceholder": {
+    "message": "例: .ads, #sidebar"
+  },
+  "addSelector": {
+    "message": "追加"
+  },
+  "activeFilters": {
+    "message": "適用中のフィルタ"
+  },
+  "noFilters": {
+    "message": "このドメインに適用中のフィルタはありません。"
+  },
+  "removeFilter": {
+    "message": "このフィルタを削除"
+  },
+  "resetDomain": {
+    "message": "このドメインの設定をリセット"
+  },
+  "candidates": {
+    "message": "自動検出された候補"
+  },
+  "scanning": {
+    "message": "ページを解析中…"
+  },
+  "noCandidates": {
+    "message": "候補は見つかりませんでした。"
+  },
+  "add": {
+    "message": "追加"
+  },
+  "added": {
+    "message": "追加済み"
+  },
+  "invalid": {
+    "message": "無効"
+  },
+  "cannotRun": {
+    "message": "このページでは使用できません。"
+  },
+  "reloadPage": {
+    "message": "ページを再読み込みしてください（準備ができていません）。"
+  },
+  "cannotAccess": {
+    "message": "このページにはアクセスできません。"
+  },
+  "noActiveTab": {
+    "message": "アクティブなタブが見つかりません。"
+  },
+  "errEmpty": {
+    "message": "CSS セレクタを入力してください。"
+  },
+  "errNotString": {
+    "message": "セレクタが空です。"
+  },
+  "errTooLong": {
+    "message": "セレクタが長すぎます（最大 500 文字）。"
+  },
+  "errForbiddenChars": {
+    "message": "使用できない文字が含まれています（{ } ; /* */）。"
+  },
+  "errForbiddenTokens": {
+    "message": "使用できない語句が含まれています。"
+  },
+  "errSyntax": {
+    "message": "CSS セレクタの構文が正しくありません。"
+  },
+  "pickerHint": {
+    "message": "🔍 クリックで追加・ぼかし済みをクリックで解除",
+    "description": "選択モードの操作パネル"
+  },
+  "pickerDone": {
+    "message": "完了"
+  },
+  "activeCount": {
+    "message": "$COUNT$ 件",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "3"
+      }
+    }
+  },
+  "confirmReset": {
+    "message": "$HOST$ のフィルタをすべて削除しますか？",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "example.com"
+      }
+    }
+  }
+}

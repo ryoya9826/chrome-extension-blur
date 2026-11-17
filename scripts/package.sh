@@ -5,7 +5,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-FILES=(manifest.json background.js content.js popup.html popup.js icons LICENSE)
+FILES=(manifest.json background.js content.js popup.html popup.js icons _locales LICENSE)
 
 for f in "${FILES[@]}"; do
   if [ ! -e "$f" ]; then
