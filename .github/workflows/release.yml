@@ -1,0 +1,38 @@
+# v* タグの push で、ストア提出用 zip を作成して GitHub Release に添付する。
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: タグと manifest.json の version が一致するか検証
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          MANIFEST_VERSION=$(python3 -c 'import json; print(json.load(open("manifest.json"))["version"])')
+          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
+            echo "::error::タグ ${GITHUB_REF_NAME} と manifest.json の version ${MANIFEST_VERSION} が一致しません"
+            exit 1
+          fi
+          echo "VERSION=${MANIFEST_VERSION}" >> "$GITHUB_ENV"
+
+      - name: zip を作成
+        run: ./scripts/package.sh
+
+      - name: GitHub Release を作成して zip を添付
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/blur-focus-${VERSION}.zip" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag
