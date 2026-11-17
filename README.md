@@ -70,6 +70,16 @@ chrome-extension-blur/
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
+上記の単体テストと、拡張機能を読み込んだ E2E テスト（`tests/e2e/`）は、Node.js と Python 3 があれば以下のコマンドでまとめて実行できます。PR と `main` への push では GitHub Actions でも同じテストを実行します。
+```bash
+npm ci
+npx playwright install chromium
+npm test
+```
+
+**リリース**
+`manifest.json` の `version` と一致するタグ（例: `v0.4`）を push すると、GitHub Actions が zip を作成して GitHub Release に添付します。
+
 **ストア提出用 zip の作成**
 以下のコマンドで、実行に必要なファイルだけを含む zip を `dist/` に作成します。
 ```bash
