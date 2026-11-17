@@ -3,6 +3,12 @@
  * Refactored into classes for better maintainability and selector precision.
  */
 
+// 開発時のみ true にする。リリース版ではコンソールに情報ログを出さない。
+const BLUR_DEBUG = false;
+function debugLog(...args) {
+  if (BLUR_DEBUG) console.log(...args);
+}
+
 class SelectorGenerator {
   /**
    * Generates a unique CSS selector for a given element.
@@ -16,9 +22,10 @@ class SelectorGenerator {
 
     // 1. ID is usually the best bet
     if (element.id) {
-      // Check if ID is unique in document just to be safe
-      if (document.querySelectorAll(`#${element.id}`).length === 1) {
-        return `#${element.id}`;
+      // 数字始まりや記号を含む ID でも有効なセレクタになるようエスケープする
+      const idSelector = `#${CSS.escape(element.id)}`;
+      if (document.querySelectorAll(idSelector).length === 1) {
+        return idSelector;
       }
     }
 
@@ -30,7 +37,7 @@ class SelectorGenerator {
       let selector = current.tagName.toLowerCase();
 
       if (current.id) {
-        selector += `#${current.id}`;
+        selector += `#${CSS.escape(current.id)}`;
         path.unshift(selector);
         break; // ID found, stop bubbling up
       } else {
@@ -39,7 +46,8 @@ class SelectorGenerator {
         if (current.className && typeof current.className === 'string') {
           const classes = current.className.trim().split(/\s+/).filter(c => c);
           if (classes.length > 0) {
-            selector += `.${classes.join('.')}`;
+            // Tailwind の `md:flex` や `w-1/2` などもエスケープして有効にする
+            selector += classes.map(c => `.${CSS.escape(c)}`).join('');
           }
         }
 
@@ -92,15 +100,21 @@ class BlurManager {
     this.styleId = 'chrome-ext-blur-style';
   }
 
-  apply(enabled, blurList) {
-    console.log(`[Blur Manager] Applying styles. Enabled: ${enabled}, Count: ${blurList ? blurList.length : 0}`);
+  /**
+   * 保存済みセレクタに対応するブラー用 <style> を差し替える。
+   * @param {boolean} enabled ブラー全体の有効/無効
+   * @param {Array<{selector: string}>} blurList 現在のドメインのセレクタ一覧
+   * @param {boolean} hoverReveal true のときマウスを乗せた要素だけブラーを解除する
+   */
+  apply(enabled, blurList, hoverReveal = true) {
+    debugLog(`[Blur Manager] Applying styles. Enabled: ${enabled}, Count: ${blurList ? blurList.length : 0}`);
 
     // Remove existing styles first
     const existing = document.getElementById(this.styleId);
     if (existing) existing.remove();
 
     if (!enabled || !blurList || blurList.length === 0) {
-      console.log("[Blur Manager] No filters to apply.");
+      debugLog("[Blur Manager] No filters to apply.");
       return;
     }
 
@@ -118,13 +132,20 @@ class BlurManager {
       cssRules += `
                 ${sel} {
                     filter: blur(10px) !important;
-                    transition: filter 0.3s ease;
-                    cursor: alias !important;
-                }
-                ${sel}:hover {
-                    filter: blur(0px) !important;
+                    ${hoverReveal ? 'cursor: alias !important;' : ''}
                 }
             `;
+      if (hoverReveal) {
+        // `.a, .b` のようなセレクタリストでも全要素に :hover が効くよう :is() で包む。
+        // transition はホバー時だけに付ける。基本ルールに付けると、読み込み直後に
+        // ブラーが徐々にかかる間だけ内容が透けて見え、マウスを離したときの再ブラーも遅れる。
+        cssRules += `
+                :is(${sel}):hover {
+                    filter: blur(0px) !important;
+                    transition: filter 0.3s ease;
+                }
+            `;
+      }
     });
 
     if (skipped > 0) {
@@ -140,7 +161,7 @@ class BlurManager {
       const target = document.head || document.documentElement;
       if (target) {
         target.appendChild(style);
-        console.log("[Blur Manager] Styles injected successfully.");
+        debugLog("[Blur Manager] Styles injected successfully.");
       } else {
         console.error("[Blur Manager] Could not find head or documentElement to inject styles.");
       }
@@ -216,8 +237,15 @@ class InteractionManager {
     this._boundKeyDown = this.handleKeyDown.bind(this);
     this._boundStorageChange = this.handleStorageChange.bind(this);
 
-    this.createOverlay();
-    this.createControlPanel();
+    // run_at: document_start では body がまだ無いため、UI は選択モード開始時に遅延生成する
+  }
+
+  /** ハイライト枠と操作パネルが未生成なら生成する。 */
+  ensureUi() {
+    if (!document.body) return false;
+    if (!this.hoverOverlay) this.createOverlay();
+    if (!this.controlPanel) this.createControlPanel();
+    return true;
   }
 
   handleStorageChange(changes, areaName) {
@@ -335,6 +363,7 @@ class InteractionManager {
   }
 
   toggle(enabled) {
+    if (enabled && !this.ensureUi()) return;
     this.isSelectionMode = enabled;
     if (enabled) {
       document.addEventListener('mouseover', this._boundMouseOver);
@@ -355,7 +384,7 @@ class InteractionManager {
       try {
         chrome.storage.onChanged.removeListener(this._boundStorageChange);
       } catch (_e) { /* ignore */ }
-      document.body.style.cursor = '';
+      if (document.body) document.body.style.cursor = '';
       this.hideOverlay();
       if (this.controlPanel) this.controlPanel.style.display = 'none';
     }
@@ -451,7 +480,7 @@ class InteractionManager {
     map[domain] = next;
     this.cachedList = next;
     chrome.storage.local.set({ blurMap: map }, () => {
-      console.log(`[Interaction] Removed ${selector} for ${domain}`);
+      debugLog(`[Interaction] Removed ${selector} for ${domain}`);
       if (this.onSelectionSaved) this.onSelectionSaved();
     });
   }
@@ -487,7 +516,7 @@ class InteractionManager {
         this.cachedList = list;
 
         chrome.storage.local.set({ blurMap: map }, () => {
-          console.log(`[Interaction] Saved ${selector} for ${domain}`);
+          debugLog(`[Interaction] Saved ${selector} for ${domain}`);
           if (this.onSelectionSaved) this.onSelectionSaved();
         });
       }
@@ -499,7 +528,7 @@ class InteractionManager {
 
 class App {
   constructor() {
-    console.log("[Blur Extension] initializing...");
+    debugLog("[Blur Extension] initializing...");
     try {
       this.selectorGenerator = new SelectorGenerator();
       this.blurManager = new BlurManager();
@@ -507,7 +536,7 @@ class App {
       // Pass refresh callback for instant apply
       this.interactionManager = new InteractionManager(this.selectorGenerator, () => this.refresh());
       this.init();
-      console.log("[Blur Extension] ready.");
+      debugLog("[Blur Extension] ready.");
     } catch (e) {
       console.error("[Blur Extension] Init failed:", e);
     }
@@ -517,9 +546,17 @@ class App {
     // Initial Load
     this.refresh();
 
+    // 設定の変更はどのタブ・ポップアップから行われても storage 経由で全タブに即時反映する
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local') return;
+      if (changes.enabled || changes.blurMap || changes.hoverReveal) {
+        this.refresh();
+      }
+    });
+
     // Message Listener
     chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-      console.log("[Blur Extension] msg received:", msg.action);
+      debugLog("[Blur Extension] msg received:", msg.action);
 
       try {
         if (msg.action === "refresh") {
@@ -544,18 +581,21 @@ class App {
       } catch (err) {
         console.error("[Blur Extension] Error handling message:", err);
       }
-      return true;
+      // すべて同期的に応答しているため、メッセージチャネルを開いたままにしない
+      return false;
     });
   }
 
+  /** 現在のドメインの設定を読み込み、ブラーを適用し直す。 */
   refresh() {
-    chrome.storage.local.get(['enabled', 'blurMap'], (res) => {
+    chrome.storage.local.get(['enabled', 'blurMap', 'hoverReveal'], (res) => {
       const map = res.blurMap || {};
       const domain = window.location.hostname;
       const list = map[domain] || [];
-      // If we have legacy "blurList", maybe migrate or ignore. Ignoring for now as we are moving forward.
-
-      this.blurManager.apply(res.enabled, list);
+      // 未設定（初回インストール直後）は有効・ホバー解除ありとして扱う
+      const enabled = res.enabled !== false;
+      const hoverReveal = res.hoverReveal !== false;
+      this.blurManager.apply(enabled, list, hoverReveal);
     });
   }
 }

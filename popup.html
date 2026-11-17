@@ -135,6 +135,13 @@
       text-decoration: underline;
     }
 
+    .sub-option {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #555;
+    }
+
     #analysisList {
       font-size: 11px;
       background: #f8f9fa;
@@ -184,6 +191,9 @@
   <div class="control-group">
     <label>
       <input type="checkbox" id="masterToggle"> Enable Blur
+    </label>
+    <label class="sub-option" title="Turn off when screen sharing so blurred content is never revealed by accident.">
+      <input type="checkbox" id="hoverRevealToggle"> Reveal on hover
     </label>
   </div>
 

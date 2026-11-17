@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const masterToggle = document.getElementById('masterToggle');
+    const hoverRevealToggle = document.getElementById('hoverRevealToggle');
     const addBtn = document.getElementById('addBtn');
     const targetSelector = document.getElementById('targetSelector');
     const listContainer = document.getElementById('listContainer');
@@ -29,8 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadState() {
         if (!currentHost) return;
-        chrome.storage.local.get(['enabled', 'blurMap'], (res) => {
-            masterToggle.checked = res.enabled || false;
+        chrome.storage.local.get(['enabled', 'blurMap', 'hoverReveal'], (res) => {
+            // 未設定（初回インストール直後）は有効として扱う。content.js と同じ規則
+            masterToggle.checked = res.enabled !== false;
+            if (hoverRevealToggle) hoverRevealToggle.checked = res.hoverReveal !== false;
 
             const map = res.blurMap || {};
             const list = map[currentHost] || [];
@@ -39,11 +42,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 設定の変更は storage.onChanged 経由で全タブの content.js が自動反映する
     masterToggle.addEventListener('change', () => {
-        chrome.storage.local.set({ enabled: masterToggle.checked }, () => {
-            notifyContentScript("refresh");
-        });
+        chrome.storage.local.set({ enabled: masterToggle.checked });
     });
+
+    if (hoverRevealToggle) {
+        hoverRevealToggle.addEventListener('change', () => {
+            chrome.storage.local.set({ hoverReveal: hoverRevealToggle.checked });
+        });
+    }
 
     addBtn.addEventListener('click', () => {
         const selector = targetSelector.value.trim();
@@ -79,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     chrome.storage.local.set({ blurMap: map }, () => {
                         loadState();
-                        notifyContentScript("resetDomain");
                     });
                 });
             }
@@ -205,7 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 chrome.storage.local.set({ blurMap: map }, () => {
                     renderBlurList(list);
-                    notifyContentScript("refresh");
                 });
             }
         });
@@ -222,7 +228,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chrome.storage.local.set({ blurMap: map }, () => {
                 renderBlurList(list);
-                notifyContentScript("refresh");
             });
         });
     }
@@ -318,10 +323,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-    }
-
-    function notifyContentScript(action) {
-        sendMessageToActiveTab({ action: action });
     }
 
     function showInputError(message) {
