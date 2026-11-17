@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <title>Blur Focus content.js テスト</title>
+  <!--
+    content.js の自動テスト。
+    chrome.* API をメモリ上のスタブに差し替え、<head> 内（body が存在しない、
+    run_at: document_start 相当のタイミング）で content.js を読み込む。
+    実行方法は README の「開発者向け情報」を参照。
+  -->
+  <script>
+    // 読み込み前に保存済みの設定を用意する（enabled は未設定 = 初回インストール直後を再現）
+    window.__store = {
+      blurMap: { [location.hostname]: [{ selector: '#preset', createdAt: 0 }] },
+    };
+    window.__changeListeners = [];
+    window.chrome = {
+      storage: {
+        local: {
+          get(keys, cb) {
+            const out = {};
+            (Array.isArray(keys) ? keys : [keys]).forEach(k => {
+              if (k in window.__store) out[k] = structuredClone(window.__store[k]);
+            });
+            setTimeout(() => cb(out), 0);
+          },
+          set(obj, cb) {
+            const changes = {};
+            Object.entries(obj).forEach(([k, v]) => {
+              changes[k] = { oldValue: window.__store[k], newValue: structuredClone(v) };
+              window.__store[k] = structuredClone(v);
+            });
+            setTimeout(() => {
+              window.__changeListeners.forEach(fn => fn(changes, 'local'));
+              if (cb) cb();
+            }, 0);
+          },
+        },
+        onChanged: {
+          addListener(fn) { window.__changeListeners.push(fn); },
+          removeListener(fn) {
+            window.__changeListeners = window.__changeListeners.filter(f => f !== fn);
+          },
+        },
+      },
+      runtime: { onMessage: { addListener() { } } },
+    };
+    window.__headHasBody = document.body !== null;
+  </script>
+  <script>document.write(`<script src="../content.js?v=${Date.now()}"><\/script>`);</script>
+</head>
+
+<body>
+  <div id="preset">保存済みセレクタで隠れる要素</div>
+  <div id="123abc">数字で始まる ID</div>
+  <div class="md:flex w-1/2">Tailwind 風のクラス</div>
+  <div class="md:flex w-1/2">Tailwind 風のクラス（2 個目）</div>
+  <pre id="result">running...</pre>
+
+  <script>
+    const results = [];
+    function check(name, cond) { results.push({ name, ok: !!cond }); }
+    const wait = (ms = 30) => new Promise(r => setTimeout(r, ms));
+    const styleText = () => {
+      const el = document.getElementById('chrome-ext-blur-style');
+      return el ? el.textContent : null;
+    };
+    const set = (obj) => new Promise(r => chrome.storage.local.set(obj, r));
+
+    window.addEventListener('load', async () => {
+      await wait();
+      const app = window.blurExtensionApp;
+
+      // 1. body が無いタイミングでも初期化できる（document_start 対応）
+      check('head で読み込んでも初期化に成功する', !window.__headHasBody && app && app.interactionManager);
+
+      // 2. enabled 未設定（初回）でも保存済みセレクタにブラーがかかる
+      check('enabled 未設定のときは有効として扱う', styleText() && styleText().includes('#preset'));
+
+      // 3. 数字始まりの ID からも有効なセレクタを作れる
+      const gen = new SelectorGenerator();
+      const idEl = document.getElementById('123abc');
+      let idSel = '';
+      try { idSel = gen.generate(idEl); } catch (_e) { }
+      let idOk = false;
+      try { idOk = document.querySelector(idSel) === idEl; } catch (_e) { }
+      check('数字始まりの ID をエスケープする', idOk && isSafeSelector(idSel));
+
+      // 4. 特殊文字を含むクラスからも一意なセレクタを作れる
+      const twEl = document.querySelectorAll('.md\\:flex')[1];
+      let twSel = '';
+      try { twSel = gen.generate(twEl); } catch (_e) { }
+      let twOk = false;
+      try {
+        const m = document.querySelectorAll(twSel);
+        twOk = m.length === 1 && m[0] === twEl;
+      } catch (_e) { }
+      check('コロンやスラッシュを含むクラスをエスケープする', twOk && isSafeSelector(twSel));
+
+      // 5. ストレージの変更がメッセージなしで即座に反映される（他タブ同期）
+      await set({ blurMap: { [location.hostname]: [{ selector: idSel, createdAt: 1 }] } });
+      await wait();
+      check('blurMap の変更を自動で反映する', styleText() && styleText().includes(idSel) && !styleText().includes('#preset'));
+
+      // 6. ホバー解除をオフにできる
+      check('既定ではホバーで解除する', styleText() && styleText().includes(':hover'));
+      await set({ hoverReveal: false });
+      await wait();
+      check('hoverReveal=false ならホバーで解除しない', styleText() && !styleText().includes(':hover'));
+
+      // 7. 無効化するとスタイルが外れる
+      await set({ enabled: false });
+      await wait();
+      check('enabled=false でブラーを外す', styleText() === null);
+
+      // 8. 選択モードを開始・終了できる（UI は遅延生成）
+      let toggled = false;
+      try {
+        app.interactionManager.toggle(true);
+        toggled = app.interactionManager.isSelectionMode && document.body.style.cursor === 'crosshair';
+        app.interactionManager.toggle(false);
+      } catch (_e) { }
+      check('選択モードを切り替えられる', toggled && !app.interactionManager.isSelectionMode);
+
+      const failed = results.filter(r => !r.ok);
+      const out = document.getElementById('result');
+      out.textContent = results.map(r => `${r.ok ? 'PASS' : 'FAIL'}  ${r.name}`).join('\n')
+        + `\n\n${results.length - failed.length}/${results.length} passed`;
+      out.dataset.status = failed.length === 0 ? 'pass' : 'fail';
+    });
+  </script>
+</body>
+
+</html>
