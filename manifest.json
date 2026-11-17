@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "Blur Focus",
+  "name": "__MSG_extName__",
   "version": "0.4",
-  "description": "いい感じにブラーをかけて広告や個人情報をホバーで隠す Chrome 拡張機能。",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "author": "Ryoya Ando (安藤遼哉)",
   "homepage_url": "https://ryoya9826.github.io/",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Blur Focus",
+    "default_title": "__MSG_extName__",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
@@ -44,7 +45,7 @@
         "default": "Alt+Shift+B",
         "mac": "Alt+Shift+B"
       },
-      "description": "Toggle Blur Focus element-picker mode"
+      "description": "__MSG_commandToggleSelect__"
     }
   },
   "content_security_policy": {

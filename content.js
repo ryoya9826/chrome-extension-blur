@@ -9,6 +9,20 @@ function debugLog(...args) {
   if (BLUR_DEBUG) console.log(...args);
 }
 
+/**
+ * 現在の UI 言語のメッセージを返す。i18n API が使えない環境（テスト用スタブなど）では fallback を返す。
+ * @param {string} key messages.json のキー
+ * @param {string} fallback 取得できなかったときの文言
+ * @returns {string}
+ */
+function i18n(key, fallback) {
+  try {
+    return (chrome.i18n && chrome.i18n.getMessage(key)) || fallback;
+  } catch (_e) {
+    return fallback;
+  }
+}
+
 class SelectorGenerator {
   /**
    * Generates a unique CSS selector for a given element.
@@ -302,11 +316,11 @@ class InteractionManager {
         `;
 
     const label = document.createElement('span');
-    label.textContent = "🔍 Click to add · Click blurred to remove";
+    label.textContent = i18n('pickerHint', '🔍 Click to add · Click blurred to remove');
     this.panelLabel = label;
 
     const doneBtn = document.createElement('button');
-    doneBtn.textContent = "Done";
+    doneBtn.textContent = i18n('pickerDone', 'Done');
     doneBtn.style.cssText = `
             background: #28a745;
             color: white;

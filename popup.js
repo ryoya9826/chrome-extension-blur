@@ -1,4 +1,31 @@
+/**
+ * 現在の UI 言語のメッセージを返す。_locales に無いキーはキー名をそのまま返す。
+ * @param {string} key messages.json のキー
+ * @param {string|string[]} [substitutions] プレースホルダーに入れる値
+ * @returns {string}
+ */
+function t(key, substitutions) {
+    return chrome.i18n.getMessage(key, substitutions) || key;
+}
+
+/** data-i18n / data-i18n-title / data-i18n-placeholder 属性を持つ要素の文言を差し替える。 */
+function localizePage() {
+    // 実際に表示している言語に合わせる。_locales に無い言語では default_locale（en）になる
+    document.documentElement.lang = t('htmlLang');
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        el.title = t(el.dataset.i18nTitle);
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        el.placeholder = t(el.dataset.i18nPlaceholder);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    localizePage();
+
     const masterToggle = document.getElementById('masterToggle');
     const hoverRevealToggle = document.getElementById('hoverRevealToggle');
     const addBtn = document.getElementById('addBtn');
@@ -21,10 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadState();
             } catch (e) {
                 console.error("Invalid URL:", e);
-                showFatal('Cannot access this page.');
+                showFatal(t('cannotAccess'));
             }
         } else {
-            showFatal('No active tab found.');
+            showFatal(t('noActiveTab'));
         }
     });
 
@@ -56,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addBtn.addEventListener('click', () => {
         const selector = targetSelector.value.trim();
         if (!selector) {
-            showInputError('Please enter a CSS selector.');
+            showInputError(t('errEmpty'));
             return;
         }
         const validation = validateSelector(selector);
@@ -80,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetDomainBtn) {
         resetDomainBtn.addEventListener('click', () => {
             if (!currentHost) return;
-            if (confirm(`Remove all filters for ${currentHost}?`)) {
+            if (confirm(t('confirmReset', currentHost))) {
                 chrome.storage.local.get(['blurMap'], (res) => {
                     const map = res.blurMap || {};
                     map[currentHost] = [];
@@ -94,11 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     selectModeBtn.addEventListener('click', () => {
-        selectModeBtn.textContent = "Connecting...";
+        selectModeBtn.textContent = t('connecting');
 
         sendMessageToActiveTab({ action: "toggleSelectMode", enabled: true }, (res) => {
             if (res === null) {
-                selectModeBtn.textContent = "🖱️ Select Element on Page";
+                selectModeBtn.textContent = t('selectElement');
                 return;
             }
             window.close();
@@ -107,9 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Display the actual user-configured shortcut (or the suggested default)
     // for the toggle-select-mode command.
-    const shortcutKeysEl = document.getElementById('shortcutKeys');
-    const shortcutEditLink = document.getElementById('shortcutEditLink');
-    if (shortcutKeysEl && chrome.commands && chrome.commands.getAll) {
+    // 表示と「変更」リンクは renderShortcut がまとめて描画する
+    if (document.getElementById('shortcutHint') && chrome.commands && chrome.commands.getAll) {
         chrome.commands.getAll((commands) => {
             const cmd = commands.find(c => c.name === 'toggle-select-mode');
             if (cmd && cmd.shortcut) {
@@ -120,13 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (shortcutEditLink) {
-        shortcutEditLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            chrome.tabs.create({ url: 'chrome://extensions/shortcuts' });
-        });
-    }
-
     function renderShortcut(combo) {
         const hint = document.getElementById('shortcutHint');
         if (!hint) return;
@@ -134,11 +153,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!combo) {
             const note = document.createElement('span');
-            note.textContent = 'Shortcut not set. ';
+            note.textContent = t('shortcutNotSet');
             hint.appendChild(note);
         } else {
             const label = document.createElement('span');
-            label.textContent = 'Shortcut: ';
+            label.textContent = t('shortcutLabel');
             hint.appendChild(label);
 
             const parts = combo.split('+');
@@ -152,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const link = document.createElement('a');
         link.href = '#';
-        link.textContent = combo ? 'change' : 'set';
+        link.textContent = combo ? t('shortcutChange') : t('shortcutSet');
         link.tabIndex = -1;
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -177,17 +196,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 code.textContent = c.selector;
 
                 const btn = document.createElement('button');
-                btn.textContent = 'Add';
+                btn.textContent = t('add');
                 btn.dataset.selector = c.selector;
                 btn.addEventListener('click', () => {
                     const validation = validateSelector(c.selector);
                     if (!validation.ok) {
-                        btn.textContent = 'Invalid';
+                        btn.textContent = t('invalid');
                         btn.disabled = true;
                         return;
                     }
                     addSelector(c.selector);
-                    btn.textContent = 'Added';
+                    btn.textContent = t('added');
                     btn.disabled = true;
                 });
 
@@ -196,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 analysisList.appendChild(item);
             });
         } else {
-            analysisList.textContent = "No obvious candidates found.";
+            analysisList.textContent = t('noCandidates');
         }
     });
 
@@ -237,13 +256,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (filterCount) {
             const count = list ? list.length : 0;
-            filterCount.textContent = count > 0 ? `${count} active` : '';
+            filterCount.textContent = count > 0 ? t('activeCount', String(count)) : '';
         }
 
         if (!list || list.length === 0) {
             const empty = document.createElement('div');
             empty.style.cssText = 'color:#999; font-size:12px; padding:5px;';
-            empty.textContent = 'No filters active for this domain.';
+            empty.textContent = t('noFilters');
             listContainer.appendChild(empty);
             return;
         }
@@ -259,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const removeBtn = document.createElement('span');
             removeBtn.className = 'remove-btn';
             removeBtn.textContent = '×';
-            removeBtn.title = 'Remove this filter';
+            removeBtn.title = t('removeFilter');
             removeBtn.addEventListener('click', () => {
                 removeSelector(item.selector);
             });
@@ -303,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 tab.url.startsWith('edge://') ||
                 tab.url.startsWith('about:') ||
                 tab.url.startsWith('chrome-extension://'))) {
-                if (analysisList) analysisList.textContent = "Cannot run on this page.";
+                if (analysisList) analysisList.textContent = t('cannotRun');
                 if (callback) callback(null);
                 return;
             }
@@ -314,7 +333,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         analysisList.textContent = '';
                         const note = document.createElement('span');
                         note.style.color = '#dc3545';
-                        note.textContent = 'Please reload the page (content script not ready).';
+                        note.textContent = t('reloadPage');
                         analysisList.appendChild(note);
                     }
                     if (callback) callback(null);
@@ -353,21 +372,21 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function validateSelector(selector) {
         if (typeof selector !== 'string' || selector.length === 0) {
-            return { ok: false, message: 'Selector must be a non-empty string.' };
+            return { ok: false, message: t('errNotString') };
         }
         if (selector.length > 500) {
-            return { ok: false, message: 'Selector is too long (max 500 chars).' };
+            return { ok: false, message: t('errTooLong') };
         }
         if (/[{};]|\/\*|\*\//.test(selector)) {
-            return { ok: false, message: 'Selector contains forbidden characters ({ } ; /* */).' };
+            return { ok: false, message: t('errForbiddenChars') };
         }
         if (/@import|expression\s*\(|url\s*\(/i.test(selector)) {
-            return { ok: false, message: 'Selector contains forbidden tokens.' };
+            return { ok: false, message: t('errForbiddenTokens') };
         }
         try {
             document.createDocumentFragment().querySelector(selector);
         } catch (_e) {
-            return { ok: false, message: 'Invalid CSS selector syntax.' };
+            return { ok: false, message: t('errSyntax') };
         }
         return { ok: true };
     }
